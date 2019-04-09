@@ -12,7 +12,7 @@ We determine bloom filter's bit set size and hash functions according to http://
 
 In this implementation, we take the hash function and generate k hash values for the element by generating a hash with ith salt. This is deviating from the suggestion at http://codekata.com/kata/kata05-bloom-filters/ because we can guarantee fewer collisions by this technique. We have made a tradeoff of computing the hash value k times so that we have fewer collisions.
 
-The implementation assumes a default hash function of md5 but users can opt to use an alternative hash function. A cheaper hash function in terms of performancecan
+The implementation assumes a default hash function of md5 but users can opt to use an alternative hash function.
 
 Code Coverage Report:
 * BloomFilter	100% (1/1)	77% (7/9)	76% (40/52)
