@@ -4,10 +4,10 @@ http://codekata.com/kata/kata05-bloom-filters/
 
 
 Code Coverage Report:
-* BloomFilter	100% (1/1)	77% (7/9)	91% (34/37) 
-* BloomFilterDriver	0% (0/1)	0% (0/2)	0% (0/36) 
-* HashFunctionUtility	100% (1/1)	100% (5/5)	100% (23/23) 
-* IBloomFilter	100% (1/1)	100% (0/0)	100% (1/1) 
+* BloomFilter	100% (1/1)	77% (7/9)	76% (40/52)
+* BloomFilterDriver	0% (0/1)	0% (0/2)	0% (0/36)
+* HashFunctionUtility	100% (1/1)	71% (5/7)	77% (24/31)
+* IBloomFilter	100% (1/1)	100% (0/0)	100% (1/1)
 
 
 References:
