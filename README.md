@@ -11,8 +11,8 @@ Code Coverage Report:
 
 
 References:
-https://blog.medium.com/what-are-bloom-filters-1ec2a50c68ff
-https://google.github.io/guava/releases/22.0/api/docs/com/google/common/hash/BloomFilter.html
-http://llimllib.github.io/bloomfilter-tutorial/
-https://hackernoon.com/probabilistic-data-structures-bloom-filter-5374112a7832
+* https://blog.medium.com/what-are-bloom-filters-1ec2a50c68ff
+* https://google.github.io/guava/releases/22.0/api/docs/com/google/common/hash/BloomFilter.html
+* http://llimllib.github.io/bloomfilter-tutorial/
+* https://hackernoon.com/probabilistic-data-structures-bloom-filter-5374112a7832
 
