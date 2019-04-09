@@ -1,8 +1,8 @@
 package com.bloomFilter;
 
 /**
- * Class which defines the method which Bloom Filter should support
- * @param <T>
+ * Class which defines the methods which Bloom Filter should support
+ * @param <T> The parameter type which should be passed in for Bloom Filter
  */
 public abstract class IBloomFilter<T> {
 
@@ -27,4 +27,9 @@ public abstract class IBloomFilter<T> {
      * @return expectedFalsePositiveProbability
      */
     abstract double expectedFalsePositiveProbability();
+
+    public abstract boolean equals(Object obj);
+
+    public abstract int hashCode();
 }
+
