@@ -1,0 +1,175 @@
+package com.bloomFilter;
+
+import com.google.common.hash.Hashing;
+import org.apache.commons.lang3.SerializationUtils;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * TestClass for bloom filter.
+ *
+ */
+public class BloomFilterTest {
+
+    @Test
+    public void testExpectedFPP() {
+        BloomFilter bloomFilterCustom = new BloomFilter<String>(3000, 0.3);
+        double actualFPP = bloomFilterCustom.expectedFalsePositiveProbability();
+        Assert.assertEquals(0.3, actualFPP, 0.0);
+    }
+
+    @Test
+    public void testOptimalBits() {
+        long actualOptimalBits = BloomFilter.optimalNumOfBits(300000, 0.3);
+        Assert.assertEquals(751773, actualOptimalBits);
+    }
+
+    @Test
+    public void testOptimalHashFunctions() {
+        int actualOptimalHashFunctions = BloomFilter.optimalNumOfHashFunctions(300000, 1000);
+        Assert.assertEquals(1, actualOptimalHashFunctions);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testIllegalArgumentForAdd() {
+        BloomFilter bloomFilterCustom = new BloomFilter<String>(10, 0.1);
+        bloomFilterCustom.add(null);
+    }
+
+    @Test
+    public void testHappyCaseTP() {
+        BloomFilter bloomFilterCustom = new BloomFilter<String>(10, 0.1);
+        bloomFilterCustom.add("abcd");
+        Assert.assertTrue(bloomFilterCustom.mightContain("abcd"));
+    }
+
+    @Test
+    public void testHappyCaseTN() {
+        BloomFilter bloomFilterCustom = new BloomFilter<String>(10, 0.1);
+        bloomFilterCustom.add("abcd");
+        Assert.assertFalse(bloomFilterCustom.mightContain("defg"));
+    }
+
+    @Test
+    public void testHappyCaseNumericBloomFilter() {
+        BloomFilter bloomFilterCustom = new BloomFilter<Integer>(10, 0.1);
+        bloomFilterCustom.add(123);
+        bloomFilterCustom.add(345);
+        bloomFilterCustom.add(567);
+        Assert.assertTrue(bloomFilterCustom.mightContain(123));
+        Assert.assertTrue(bloomFilterCustom.mightContain(345));
+        Assert.assertTrue(bloomFilterCustom.mightContain(567));
+        Assert.assertFalse(bloomFilterCustom.mightContain(789));
+    }
+
+    @Test
+    public void testTPsInDictionary() {
+        BloomFilter bloomFilterCustom = new BloomFilter<String>(338881, 0.3);
+        //Load input file location as dict
+        String filePath = "resources/wordlist.txt";
+        List<String> words = loadListOfWords(filePath);
+        int numWordsInDictionary = words.size();
+
+        //add all words in dictionary
+        for (String word : words) {
+                bloomFilterCustom.add(word);
+        }
+
+        //test for containment
+        int containedWords = 0;
+        for (String word : words) {
+            if (bloomFilterCustom.mightContain(word)) {
+                containedWords++;
+            }
+        }
+
+        Assert.assertTrue("All words in dictionary are present", containedWords == numWordsInDictionary );
+    }
+
+    @Test
+    public void testFPsInDictionary() {
+        BloomFilter bloomFilterCustom = new BloomFilter<String>(338881, 0.3);
+        //Load input file location as dict
+        String filePath = "resources/wordlist.txt";
+        List<String> words = loadListOfWords(filePath);
+        int numWordsInDictionary = words.size();
+
+        //add all words in dictionary
+        for (String word : words) {
+            bloomFilterCustom.add(word);
+        }
+
+        //test for containment
+        int containedWords = 0;
+        for (String word : words) {
+            String madeUpWord = word + "a";
+            if (bloomFilterCustom.mightContain(madeUpWord)) {
+                containedWords++;
+            }
+        }
+        Assert.assertTrue("A few words not in dictionary show up as present " + containedWords, 112227 == containedWords );
+    }
+
+    @Test
+    public void testBloomFilterWithMurMurHashing() {
+        BloomFilter bloomFilterCustom = new BloomFilter<String>(338881, 0.1, Hashing.murmur3_32());
+        //Load input file location as dict
+        String filePath = "resources/wordlist.txt";
+        List<String> words = loadListOfWords(filePath);
+        int numWordsInDictionary = words.size();
+
+        //add all words in dictionary
+        for (String word : words) {
+            bloomFilterCustom.add(word);
+        }
+
+        //test for containment
+        int existentWords = 0;
+        int nonExistentWords = 0;
+        for (String word : words) {
+            if (bloomFilterCustom.mightContain(word)) {
+                existentWords++;
+            }
+            String madeUpWord = word + "a";
+            if (bloomFilterCustom.mightContain(madeUpWord)) {
+                nonExistentWords++;
+            }
+        }
+        Assert.assertTrue("All words in dictionary are present" + existentWords, numWordsInDictionary == existentWords);
+        Assert.assertTrue("A few words not in dictionary show up as present " + nonExistentWords, 64712 == nonExistentWords);
+    }
+
+    public static List<String> loadListOfWords(String filePath) {
+        List<String> listOfWords = new ArrayList<String>();
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(filePath));
+            String line = reader.readLine();
+            while (line != null) {
+                // read next line
+                line = reader.readLine();
+                if (line != null) {
+                    listOfWords.add(line);
+                }
+            }
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return listOfWords;
+    }
+    @Test
+    public void testSerializibility() {
+        final BloomFilter bloomFilter = new BloomFilter(100, 0.3);
+        SerializationTestUtility.failIfObjectNotSerializable(bloomFilter);
+    }
+
+
+}
