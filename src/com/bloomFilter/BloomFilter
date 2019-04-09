@@ -1,0 +1,165 @@
+package com.bloomFilter;
+
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+
+import java.io.Serializable;
+import java.util.BitSet;
+import java.util.List;
+
+/**
+ * A BloomFilter is a space-efficient probabilistic data structure that is used to test whether an element is a member of a set. False positive matches are possible, but false negatives are not; i.e. a query returns either "possibly in the set" or "definitely not in set".
+ * reference https://en.wikipedia.org/wiki/Bloom_filter
+ *
+ * This class implements IBloomFilter<T>
+ *
+ * Limitations:
+ * * BitSet is not thread safe and doesn't support concurrent access. Hence we are adding a synchronized statement around bit set update logic.
+ * * There is a limit on number of elements in bit set 2 ^ 32
+ * * This implementation doesn't support remove operation.
+ *
+ */
+public class BloomFilter<T> extends IBloomFilter<T> implements Serializable {
+    private static final long serialVersionUID = -2140967344738666115L;
+    // Number of hash functions which need to be computed
+    private final int numHashFunctions;
+    // Number of bits which need to be present in bitset
+    private final int numberOfBits;
+    // Expected false positive probability.
+    private final double fpp;
+
+    private final BitSet bitSet;
+    private final HashFunctionUtility hfUtility;
+
+    /**
+     * Constructor for BloomFilter
+     * @param expectedInsertions Approximate insertions which are expected for filter.
+     * @param fpp                Value for false positives which we can tolerate.
+     */
+    public BloomFilter(long expectedInsertions, double fpp) {
+        this(expectedInsertions, fpp, Hashing.md5());
+    }
+
+    /**
+     * Constructor for BloomFilter
+     * @param expectedInsertions Approximate insertions which are expected for filter.
+     * @param fpp                Value for false positives which we can tolerate.
+     * @param hf         HashFilter which would serve as the basis of Bloom Filter.
+     */
+    public BloomFilter(long expectedInsertions, double fpp, HashFunction hf) {
+
+        Preconditions.checkArgument(expectedInsertions >= 0, "Expected insertions (%s) must be >= 0", expectedInsertions);
+        Preconditions.checkArgument(fpp > 0.0, "False positive probability (%s) must be > 0.0", fpp);
+        Preconditions.checkArgument(fpp < 1.0, "False positive probability (%s) must be < 1.0", fpp);
+
+        int numBits = optimalNumOfBits(expectedInsertions, fpp);
+        int numHashFunctions = optimalNumOfHashFunctions(expectedInsertions, numBits);
+
+
+        this.numberOfBits = numBits;
+        this.bitSet = new BitSet(numberOfBits);
+        this.numHashFunctions = numHashFunctions;
+        this.fpp = fpp;
+        this.hfUtility = new HashFunctionUtility<T>(hf);
+    }
+
+    /**
+     * Add element which needs to be added to bloom filter.
+     *
+     * @param element element to check.
+     * @return true if the array could have been inserted into the Bloom filter.
+     */
+    public void add(T element) {
+        Preconditions.checkArgument(element != null, "Element is null.");
+        List<Integer> hashes = hfUtility.getNormalizedKDiscreteValues(element, numHashFunctions, numberOfBits);
+        synchronized (this) {
+            for (int hash : hashes) {
+                bitSet.set(hash, true);
+            }
+        }
+    }
+
+    /**
+     * Returns true if the array of bytes could have been inserted into the Bloom filter.
+     * Use getFalsePositiveProbability() to calculate the probability of this
+     * being correct.
+     *
+     * @param element element to check.
+     * @return true if the array could have been inserted into the Bloom filter.
+     */
+    public boolean mightContain(T element) {
+        Preconditions.checkArgument(element != null, "Element is null.");
+        List<Integer> hashes = hfUtility.getNormalizedKDiscreteValues(element, numHashFunctions, numberOfBits);
+        synchronized (this) {
+            for (int hash : hashes) {
+                if (!bitSet.get(hash)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public double expectedFalsePositiveProbability() {
+        return this.fpp;
+    }
+
+    /**
+     * Computes m (total bits of Bloom filter) which is expected to achieve, for the specified
+     * expected insertions, the required false positive probability.
+     *
+     * See http://en.wikipedia.org/wiki/Bloom_filter#Probability_of_false_positives for the formula.
+     * Code copied from https://google.github.io/guava/releases/22.0/api/docs/src-html/com/google/common/hash/BloomFilter.html#line.454
+     *
+     * @param expectedInsertions expected insertions (must be positive)
+     * @param fppRate false positive rate (must be 0 < fppRate < 1)
+     */
+    static int optimalNumOfBits(long expectedInsertions, double fppRate) {
+        Preconditions.checkArgument(expectedInsertions >= 0, "Expected insertions (%s) must be >= 0", expectedInsertions);
+        Preconditions.checkArgument(fppRate > 0.0, "False positive probability (%s) must be > 0.0", fppRate);
+        Preconditions.checkArgument(fppRate < 1.0, "False positive probability (%s) must be < 1.0", fppRate);
+        if (fppRate == 0) {
+            fppRate = Double.MIN_VALUE;
+        }
+        return (int) (-expectedInsertions * Math.log(fppRate) / (Math.log(2) * Math.log(2)));
+    }
+
+    /**
+     * Computes the optimal k (number of hashes per element inserted in Bloom filter), given the
+     * expected insertions and total number of bits in the Bloom filter.
+     *
+     * See http://en.wikipedia.org/wiki/File:Bloom_filter_fp_probability.svg for the formula.
+     * Code copied from https://google.github.io/guava/releases/22.0/api/docs/src-html/com/google/common/hash/BloomFilter.html#line.439
+     *
+     * @param expectedInsertions expected insertions (must be positive)
+     * @param numBits total number of bits in Bloom filter (must be positive)
+     */
+    static int optimalNumOfHashFunctions(long expectedInsertions, long numBits) {
+        Preconditions.checkArgument(expectedInsertions >= 0, "Expected insertions (%s) must be >= 0", expectedInsertions);
+        Preconditions.checkArgument(numBits >= 0, "numBits (%s) must be >= 0", numBits);
+        return Math.max(1, (int) Math.round((double) numBits / expectedInsertions * Math.log(2)));
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if(obj == this) return true;
+        if(obj == null) return false;
+
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final BloomFilter other = (BloomFilter) obj;
+        return Objects.equal(this.numberOfBits, other.numberOfBits) &&
+                Objects.equal(this.fpp, other.fpp) &&
+                Objects.equal(this.numHashFunctions, other.numHashFunctions) &&
+                Objects.equal(this.bitSet, other.bitSet) &&
+                Objects.equal(this.hfUtility, other.hfUtility);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(this.numHashFunctions, this.numberOfBits, this.fpp, this.bitSet, this.hfUtility);
+    }
+}

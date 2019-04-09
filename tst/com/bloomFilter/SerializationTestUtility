@@ -1,0 +1,16 @@
+package com.bloomFilter;
+
+import org.apache.commons.lang3.SerializationUtils;
+import org.junit.Assert;
+
+import java.io.Serializable;
+
+public class SerializationTestUtility {
+
+
+    static public void failIfObjectNotSerializable(Serializable obj) {
+        byte[] data = SerializationUtils.serialize(obj);
+        Object returnObject = SerializationUtils.deserialize(data);
+        Assert.assertNotNull(returnObject);
+    }
+}
