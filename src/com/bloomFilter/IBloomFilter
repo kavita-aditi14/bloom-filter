@@ -1,0 +1,30 @@
+package com.bloomFilter;
+
+/**
+ * Class which defines the method which Bloom Filter should support
+ * @param <T>
+ */
+public abstract class IBloomFilter<T> {
+
+    /**
+     * Method which allows adding elements to the bloom filter.
+     *
+     * @param element Element which needs to be added.
+     */
+    abstract void add(T element);
+
+    /**
+     * Method which helps determine whether bloom filter contains element.
+     *
+     * @param element Element which needs to be checked for containment.
+     * @return boolean value indicating whether element exists.
+     */
+    abstract boolean mightContain(T element);
+
+    /**
+     * Method which returns expectedFalsePositiveProbability.
+     *
+     * @return expectedFalsePositiveProbability
+     */
+    abstract double expectedFalsePositiveProbability();
+}
