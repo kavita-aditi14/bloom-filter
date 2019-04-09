@@ -1,0 +1,66 @@
+package com.bloomFilter;
+
+
+import com.google.common.hash.Hashing;
+import org.apache.commons.lang3.SerializationUtils;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Test class for HashFunctionUtility class.
+ */
+public class HashFunctionUtilityTest {
+    HashFunctionUtility hashFunctionUtility = new HashFunctionUtility(Hashing.md5());
+
+    @Test
+    public void testHashCode() {
+        byte[] actualHash = hashFunctionUtility.getHashCode("test", 0).asBytes();
+        byte[] expectedHash = new byte[] {9, -113, 107, -51, 70, 33, -45, 115, -54, -34, 78, -125, 38, 39, -76, -10};
+        Assert.assertArrayEquals(expectedHash, actualHash);
+    }
+
+    @Test
+    public void testHashCodeMurMur() {
+        HashFunctionUtility hashFunctionUtilityMurMur = new HashFunctionUtility(Hashing.murmur3_32());
+        byte[] actualHash = hashFunctionUtilityMurMur.getHashCode("test", 0).asBytes();
+        byte[] expectedHash = new byte[] {19, -46, 107, -70};
+        Assert.assertArrayEquals(expectedHash, actualHash);
+    }
+
+    @Test
+    public void testNormalizedValueNormalizationNotNeeded() {
+        int actual = hashFunctionUtility.normalizedValue(7, 0, 10);
+        Assert.assertTrue("Normalized value for 7 with lowerBound 0 and upperBound 10 is incorrect", 7 == actual);
+    }
+
+    @Test
+    public void testNormalizedValueNormalizationNeeded() {
+        int actual = hashFunctionUtility.normalizedValue(17, 0, 10);
+        Assert.assertTrue("Normalized value for 17 with lowerBound 0 and upperBound 10 is incorrect", 7 == actual);
+    }
+
+    @Test
+    public void testGetKDiscreteValues() {
+        List<Integer> kDiscreteValues = hashFunctionUtility.getKDiscreteValues("word", 6);
+        List<Integer> expectedKDiscreteValues = Arrays.asList(1880653252, 1880653252, 1880653252, 1880653252, 1880653252, 1880653252);
+        Assert.assertEquals(expectedKDiscreteValues, kDiscreteValues);
+    }
+
+    @Test
+    public void testGetNormalizedKDiscreteValues() {
+        List<Integer> normalizedKDiscreteValues = hashFunctionUtility.getNormalizedKDiscreteValues("word", 10, 100);
+        List<Integer> expectedNormalizedKDiscreteValues = Arrays.asList(52, 52, 52, 52, 52, 52, 52, 52, 52, 52);
+        Assert.assertEquals(expectedNormalizedKDiscreteValues, normalizedKDiscreteValues);
+    }
+
+    @Test
+    public void testSerializibility() {
+        final HashFunctionUtility hfu = new HashFunctionUtility(Hashing.murmur3_32());
+        SerializationTestUtility.failIfObjectNotSerializable(hfu);
+    }
+
+}
